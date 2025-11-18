@@ -27,6 +27,11 @@ WaitVBlank:
   ld hl, $8000
   ld bc, PaddleEnd - Paddle
   call Memcopy
+; copy the ball
+  ld de, Ball
+  ld hl, $8010
+  ld bc, BallEnd - Ball
+  call Memcopy
 ; clear oam
   xor a, a
   ld b, 160
@@ -43,7 +48,21 @@ ClearOam:
   ld [hli], a
   ld a, 0
   ld [hli], a
-  ld [hl], a
+  ld [hli], a
+; init game object (ball)
+  ld a, 100 + 16
+  ld [hli], a
+  ld a, 32 + 8
+  ld [hli], a
+  ld a, 1
+  ld [hli], a
+  ld a, 0
+  ld [hli], a
+  ; set ball momentum (up and right)
+  ld a, 1
+  ld [wBallMomentumX], a
+  ld a, -1
+  ld [wBallMomentumY], a
 ; enable the LCD
   ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
   ld [rLCDC], a
@@ -66,6 +85,17 @@ WaitVBlank2:
   ld a, [rLY]
   cp 144
   jp c, WaitVBlank2
+; update the ball's position using its momentum
+  ld a, [wBallMomentumX]
+  ld b, a
+  ld a, [_OAMRAM + 5]
+  add a, b
+  ld [_OAMRAM + 5], a
+  ld a, [wBallMomentumY]
+  ld b, a
+  ld a, [_OAMRAM + 4]
+  add a, b
+  ld [_OAMRAM + 4], a
 ; check the current keys every frame and move left or right
   call UpdateKeys
 ; check if left button is pressed
@@ -382,6 +412,16 @@ Paddle:
   dw `00000000
   dw `00000000
 PaddleEnd:
+Ball:
+  dw `00033000
+  dw `00322300
+  dw `03222230
+  dw `03222230
+  dw `00322300
+  dw `00033000
+  dw `00000000
+  dw `00000000
+BallEnd:
 
 SECTION "Counter", WRAM0
 wFrameCounter: db
@@ -389,3 +429,7 @@ wFrameCounter: db
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
+
+SECTION "Ball Data", WRAM0
+wBallMomentumX: db
+wBallMomentumY: db
