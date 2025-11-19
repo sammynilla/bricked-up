@@ -114,7 +114,7 @@ BounceOnRight:
   sub a, 16
   ld c, a
   ld a, [_OAMRAM + 5]
-  sub a, 8 - 1
+  sub a, 8 - 5
   ld b, a
   call GetTileByPixel ; returns tile address in hl
   ld a, [hl]
@@ -149,6 +149,26 @@ BounceOnBottom:
   ld a, -1
   ld [wBallMomentumY], a
 BounceDone:
+; check if ball is low enough to bounce off the paddle
+  ld a, [_OAMRAM]
+  ld b, a
+  ld a, [_OAMRAM + 4]
+  add a, 4
+  cp a, b
+  jp nz, PaddleBounceDone ; check to make sure that ball and paddle have the same y position
+  ld a, [_OAMRAM + 5]
+  ld b, a
+  ld a, [_OAMRAM + 1]
+  sub a, 4 + 2      ; subtract half paddle width from paddle x position
+  cp a, b           ; sets carry flag if a < b
+  jp nc, PaddleBounceDone
+  add a, 4 + 8 + 2  ; add half paddle width to x value to return to original position, add paddle width to x value
+  cp a, b
+  jp c, PaddleBounceDone
+  ; bounce happened, change momentum
+  ld a, -1
+  ld [wBallMomentumY], a
+PaddleBounceDone:
 ; check the current keys every frame and move left or right
   call UpdateKeys
 ; check if left button is pressed
@@ -506,21 +526,21 @@ Tilemap:
 TilemapEnd:
 Paddle:
   dw `33333333
-  dw `03333330
+  dw `32222223
   dw `00000000
-  dw `00333300
   dw `00000000
-  dw `00033000
+  dw `00000000
+  dw `00000000
   dw `00000000
   dw `00000000
 PaddleEnd:
 Ball:
-  dw `00033000
-  dw `00322300
-  dw `03222230
-  dw `03222230
-  dw `00322300
-  dw `00033000
+  dw `03330000
+  dw `32223000
+  dw `32223000
+  dw `32223000
+  dw `03330000
+  dw `00000000
   dw `00000000
   dw `00000000
 BallEnd:
