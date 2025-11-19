@@ -1,5 +1,9 @@
 INCLUDE "hardware.inc"
 
+DEF BRICK_LEFT EQU $05
+DEF BRICK_RIGHT EQU $06
+DEF BLANK_TILE EQU $08
+
 SECTION "Header", ROM0[$100]
   jp EntryPoint
   ds $150 - @, 0 ; make room for the header
@@ -107,6 +111,7 @@ BounceOnTop:
   ld a, [hl]
   call IsWallTile
   jp nz, BounceOnRight
+  call CheckAndHandleBrick
   ld a, 1
   ld [wBallMomentumY], a
 BounceOnRight:
@@ -120,6 +125,7 @@ BounceOnRight:
   ld a, [hl]
   call IsWallTile
   jp nz, BounceOnLeft
+  call CheckAndHandleBrick
   ld a, -1
   ld [wBallMomentumX], a
 BounceOnLeft:
@@ -133,6 +139,7 @@ BounceOnLeft:
   ld a, [hl]
   call IsWallTile
   jp nz, BounceOnBottom
+  call CheckAndHandleBrick
   ld a, 1
   ld [wBallMomentumX], a
 BounceOnBottom:
@@ -146,6 +153,7 @@ BounceOnBottom:
   ld a, [hl]
   call IsWallTile
   jp nz, BounceDone
+  call CheckAndHandleBrick
   ld a, -1
   ld [wBallMomentumY], a
 BounceDone:
@@ -197,6 +205,24 @@ Right:
   jp z, Main
   ld [_OAMRAM + 1], a
   jp Main
+; check if a brick was collided with and break it if possible
+; @params hl: address of tile
+CheckAndHandleBrick:
+  ld a, [hl]
+  cp a, BRICK_LEFT
+  jr nz, CheckAndHandleBrickRight
+  ; break the brick from the left side
+  ld [hl], BLANK_TILE
+  inc hl
+  ld [hl], BLANK_TILE
+CheckAndHandleBrickRight:
+  cp a, BRICK_RIGHT
+  ret nz
+  ; break the brick from the right side
+  ld [hl], BLANK_TILE
+  dec hl
+  ld [hl], BLANK_TILE
+  ret
 
 UpdateKeys: ; mysterious input polling black box from https://gbdev.io/gb-asm-tutorial/part2/input.html
   ; Poll half the controller
