@@ -8,275 +8,275 @@ DEF SCORE_TENS    EQU $9870
 DEF SCORE_ONES    EQU $9871
 
 SECTION "Header", ROM0[$100]
-  jp EntryPoint
-  ds $150 - @, 0 ; make room for the header
+  JP EntryPoint
+  DS $150 - @, 0 ; make room for the header
 EntryPoint:
   ; do not turn the LCD off outside of VBlank
 WaitVBlank:
-  ld a, [rLY]
-  cp 144
-  jp c, WaitVBlank
+  LD A, [rLY]
+  CP 144
+  JP c, WaitVBlank
   ; turn the LCD off
-  ld a, 0
-  ld [rLCDC], a
+  LD A, 0
+  LD [rLCDC], A
 ; copy the tiles
-  ld de, Tiles
-  ld hl, $9000
-  ld bc, TilesEnd - Tiles
-  call Memcopy
+  LD DE, Tiles
+  LD HL, $9000
+  LD BC, TilesEnd - Tiles
+  CALL Memcopy
 ; copy the tilemap
-  ld de, Tilemap
-  ld hl, $9800
-  ld bc, TilemapEnd - Tilemap
-  call Memcopy
+  LD DE, Tilemap
+  LD HL, $9800
+  LD BC, TilemapEnd - Tilemap
+  CALL Memcopy
 ; copy the paddle tile
-  ld de, Paddle
-  ld hl, $8000
-  ld bc, PaddleEnd - Paddle
+  LD DE, Paddle
+  LD HL, $8000
+  LD BC, PaddleEnd - Paddle
   call Memcopy
 ; copy the ball
-  ld de, Ball
-  ld hl, $8010
-  ld bc, BallEnd - Ball
-  call Memcopy
+  LD DE, Ball
+  LD HL, $8010
+  LD BC, BallEnd - Ball
+  CALL Memcopy
 ; clear oam
-  xor a, a
-  ld b, 160
-  ld hl, _OAMRAM
+  XOR A, A
+  LD B, 160
+  LD HL, _OAMRAM
 ClearOam:
-  ld [hli], a
-  dec b
-  jp nz, ClearOam
+  LD [HLi], A
+  DEC B
+  JP nz, ClearOam
 ; init game object (paddle)
-  ld hl, _OAMRAM
-  ld a, 128 + 16
-  ld [hli], a
-  ld a, 16 + 8
-  ld [hli], a
-  ld a, 0
-  ld [hli], a
-  ld [hli], a
+  LD HL, _OAMRAM
+  LD A, 128 + 16
+  LD [HLi], A
+  LD a, 16 + 8
+  LD [HLi], A
+  LD a, 0
+  LD [HLi], A
+  LD [HLi], A
 ; init game object (ball)
-  ld a, 100 + 16
-  ld [hli], a
-  ld a, 32 + 8
-  ld [hli], a
-  ld a, 1
-  ld [hli], a
-  ld a, 0
-  ld [hli], a
+  LD A, 100 + 16
+  LD [HLi], A
+  LD A, 32 + 8
+  LD [HLi], A
+  LD A, 1
+  LD [HLi], A
+  LD A, 0
+  LD [HLi], A
   ; set ball momentum (up and right)
-  ld a, 1
-  ld [wBallMomentumX], a
-  ld a, -1
-  ld [wBallMomentumY], a
+  LD A, 1
+  LD [wBallMomentumX], A
+  LD A, -1
+  LD [wBallMomentumY], A
 ; enable the LCD
-  ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
-  ld [rLCDC], a
+  LD A, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
+  LD [rLCDC], A
   ; during the first (blank) frame, initialize display registers
-  ld a, %11100100
-  ld [rBGP], a
-  ld a, %11100100
-  ld [rOBP0], a
+  LD A, %11100100
+  LD [rBGP], A
+  LD A, %11100100
+  LD [rOBP0], A
 ; initialize global vars
-  ld a, 0
-  ld [wFrameCounter], a
-  ld [wCurKeys], a
-  ld [wNewKeys], a
-  ld [wScore], a
+  LD A, 0
+  LD [wFrameCounter], A
+  LD [wCurKeys], A
+  LD [wNewKeys], A
+  LD [wScore], A
 Main:
   ; wait until no longer VBlank
-  ld a, [rLY]
-  cp 144
-  jp nc, Main
+  LD A, [rLY]
+  CP 144
+  JP nc, Main
 WaitVBlank2:
-  ld a, [rLY]
-  cp 144
-  jp c, WaitVBlank2
+  LD A, [rLY]
+  CP 144
+  JP c, WaitVBlank2
 ; update the ball's position using its momentum
-  ld a, [wBallMomentumX]
-  ld b, a
-  ld a, [_OAMRAM + 5]
-  add a, b
-  ld [_OAMRAM + 5], a
-  ld a, [wBallMomentumY]
-  ld b, a
-  ld a, [_OAMRAM + 4]
-  add a, b
-  ld [_OAMRAM + 4], a
+  LD A, [wBallMomentumX]
+  LD B, A
+  LD A, [_OAMRAM + 5]
+  ADD A, B
+  LD [_OAMRAM + 5], A
+  LD A, [wBallMomentumY]
+  LD B, A
+  LD A, [_OAMRAM + 4]
+  ADD A, B
+  LD [_OAMRAM + 4], A
 BounceOnTop:
-  ld a, [_OAMRAM + 4]
-  sub a, 16 + 1
-  ld c, a
-  ld a, [_OAMRAM + 5]
-  sub a, 8
-  ld b, a
-  call GetTileByPixel ; returns tile address in hl
-  ld a, [hl]
-  call IsWallTile
-  jp nz, BounceOnRight
-  call CheckAndHandleBrick
-  ld a, 1
-  ld [wBallMomentumY], a
+  LD A, [_OAMRAM + 4]
+  SUB A, 16 + 1
+  LD C, A
+  LD A, [_OAMRAM + 5]
+  SUB A, 8
+  LD B, A
+  CALL GetTileByPixel ; returns tile address in hl
+  LD A, [HL]
+  CALL IsWallTile
+  JP nz, BounceOnRight
+  CALL CheckAndHandleBrick
+  LD A, 1
+  LD [wBallMomentumY], A
 BounceOnRight:
-  ld a, [_OAMRAM + 4]
-  sub a, 16
-  ld c, a
-  ld a, [_OAMRAM + 5]
-  sub a, 8 - 5
-  ld b, a
-  call GetTileByPixel ; returns tile address in hl
-  ld a, [hl]
-  call IsWallTile
-  jp nz, BounceOnLeft
-  call CheckAndHandleBrick
-  ld a, -1
-  ld [wBallMomentumX], a
+  LD A, [_OAMRAM + 4]
+  SUB A, 16
+  LD C, A
+  LD A, [_OAMRAM + 5]
+  SUB A, 8 - 5
+  LD B, A
+  CALL GetTileByPixel ; returns tile address in hl
+  LD A, [HL]
+  CALL IsWallTile
+  JP nz, BounceOnLeft
+  CALL CheckAndHandleBrick
+  LD A, -1
+  LD [wBallMomentumX], A
 BounceOnLeft:
-  ld a, [_OAMRAM + 4]
-  sub a, 16
-  ld c, a
-  ld a, [_OAMRAM + 5]
-  sub a, 8 + 1
-  ld b, a
-  call GetTileByPixel ; returns tile address in hl
-  ld a, [hl]
-  call IsWallTile
-  jp nz, BounceOnBottom
-  call CheckAndHandleBrick
-  ld a, 1
-  ld [wBallMomentumX], a
+  LD A, [_OAMRAM + 4]
+  SUB A, 16
+  LD C, A
+  LD A, [_OAMRAM + 5]
+  SUB A, 8 + 1
+  LD B, A
+  CALL GetTileByPixel ; returns tile address in hl
+  LD A, [HL]
+  CALL IsWallTile
+  JP nz, BounceOnBottom
+  CALL CheckAndHandleBrick
+  LD A, 1
+  LD [wBallMomentumX], A
 BounceOnBottom:
-  ld a, [_OAMRAM + 4]
-  sub a, 16 - 1
-  ld c, a
-  ld a, [_OAMRAM + 5]
-  sub a, 8
-  ld b, a
-  call GetTileByPixel ; returns tile address in hl
-  ld a, [hl]
-  call IsWallTile
-  jp nz, BounceDone
-  call CheckAndHandleBrick
-  ld a, -1
-  ld [wBallMomentumY], a
+  LD A, [_OAMRAM + 4]
+  SUB A, 16 - 1
+  LD C, A
+  LD A, [_OAMRAM + 5]
+  SUB A, 8
+  LD B, A
+  CALL GetTileByPixel ; returns tile address in hl
+  LD A, [HL]
+  CALL IsWallTile
+  JP nz, BounceDone
+  CALL CheckAndHandleBrick
+  LD A, -1
+  LD [wBallMomentumY], A
 BounceDone:
 ; check if ball is low enough to bounce off the paddle
-  ld a, [_OAMRAM]
-  ld b, a
-  ld a, [_OAMRAM + 4]
-  add a, 4
-  cp a, b
-  jp nz, PaddleBounceDone ; check to make sure that ball and paddle have the same y position
-  ld a, [_OAMRAM + 5]
-  ld b, a
-  ld a, [_OAMRAM + 1]
-  sub a, 4 + 2      ; subtract half paddle width from paddle x position
-  cp a, b           ; sets carry flag if a < b
-  jp nc, PaddleBounceDone
-  add a, 4 + 8 + 2  ; add half paddle width to x value to return to original position, add paddle width to x value
-  cp a, b
-  jp c, PaddleBounceDone
+  LD A, [_OAMRAM]
+  LD B, A
+  LD A, [_OAMRAM + 4]
+  ADD A, 4
+  CP A, B
+  JP nz, PaddleBounceDone ; check to make sure that ball and paddle have the same y position
+  LD A, [_OAMRAM + 5]
+  LD B, A
+  LD A, [_OAMRAM + 1]
+  SUB A, 4 + 2      ; subtract half paddle width from paddle x position
+  CP A, B           ; sets carry flag if a < b
+  JP nc, PaddleBounceDone
+  ADD A, 4 + 8 + 2  ; add half paddle width to x value to return to original position, add paddle width to x value
+  CP A, B
+  JP c, PaddleBounceDone
   ; bounce happened, change momentum
-  ld a, -1
-  ld [wBallMomentumY], a
+  LD A, -1
+  LD [wBallMomentumY], A
 PaddleBounceDone:
 ; check the current keys every frame and move left or right
-  call UpdateKeys
+  CALL UpdateKeys
 ; check if left button is pressed
 CheckLeft:
-  ld a, [wCurKeys]
-  and a, PADF_LEFT
-  jp z, CheckRight
+  LD A, [wCurKeys]
+  AND A, PADF_LEFT
+  JP z, CheckRight
 Left:
   ; move the paddle one pixel to the left
-  ld a, [_OAMRAM + 1]
-  dec a
-  cp a, 15 ; edge of playfield check
-  jp z, Main
-  ld [_OAMRAM + 1], a
-  jp Main
+  LD A, [_OAMRAM + 1]
+  DEC A
+  CP A, 15 ; edge of playfield check
+  JP z, Main
+  LD [_OAMRAM + 1], A
+  JP Main
 ; check if right button is pressed
 CheckRight:
-  ld a, [wCurKeys]
-  and a, PADF_RIGHT
-  jp z, Main
+  LD A, [wCurKeys]
+  AND A, PADF_RIGHT
+  JP z, Main
 Right:
   ; move the paddle one pixel to the right
-  ld a, [_OAMRAM + 1]
-  inc a
-  cp a, 105 ; edge of playfield check
-  jp z, Main
-  ld [_OAMRAM + 1], a
-  jp Main
+  LD A, [_OAMRAM + 1]
+  INC A
+  CP A, 105 ; edge of playfield check
+  JP z, Main
+  LD [_OAMRAM + 1], A
+  JP Main
 ; check if a brick was collided with and break it if possible
 ; @params hl: address of tile
 CheckAndHandleBrick:
-  ld a, [hl]
-  cp a, BRICK_LEFT
-  jr nz, CheckAndHandleBrickRight
+  LD A, [HL]
+  CP A, BRICK_LEFT
+  JR nz, CheckAndHandleBrickRight
   ; break the brick from the left side
-  ld [hl], BLANK_TILE
-  inc hl
-  ld [hl], BLANK_TILE
-  call IncreaseScorePackedBCD
+  LD [HL], BLANK_TILE
+  INC HL
+  LD [HL], BLANK_TILE
+  CALL IncreaseScorePackedBCD
 CheckAndHandleBrickRight:
-  cp a, BRICK_RIGHT
-  ret nz
+  CP A, BRICK_RIGHT
+  RET nz
   ; break the brick from the right side
-  ld [hl], BLANK_TILE
-  dec hl
-  ld [hl], BLANK_TILE
-  call IncreaseScorePackedBCD
-  ret
+  LD [HL], BLANK_TILE
+  DEC HL
+  LD [HL], BLANK_TILE
+  CALL IncreaseScorePackedBCD
+  RET
 
 UpdateKeys: ; mysterious input polling black box from https://gbdev.io/gb-asm-tutorial/part2/input.html
   ; Poll half the controller
-  ld a, P1F_GET_BTN
-  call .onenibble
-  ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+  LD A, P1F_GET_BTN
+  CALL .onenibble
+  LD B, A   ; B7-4 = 1; B3-0 = unpressed buttons
 
   ; Poll the other half
-  ld a, P1F_GET_DPAD
-  call .onenibble
-  swap a ; A7-4 = unpressed directions; A3-0 = 1
-  xor a, b ; A = pressed buttons + directions
-  ld b, a ; B = pressed buttons + directions
+  LD A, P1F_GET_DPAD
+  CALL .onenibble
+  SWAP A    ; A7-4 = unpressed directions; A3-0 = 1
+  XOR A, B  ; A = pressed buttons + directions
+  LD B, A   ; B = pressed buttons + directions
 
   ; And release the controller
-  ld a, P1F_GET_NONE
-  ldh [rP1], a
+  LD A, P1F_GET_NONE
+  LDH [rP1], A
 
   ; Combine with previous wCurKeys to make wNewKeys
-  ld a, [wCurKeys]
-  xor a, b ; A = keys that changed state
-  and a, b ; A = keys that changed to pressed
-  ld [wNewKeys], a
-  ld a, b
-  ld [wCurKeys], a
-  ret
+  LD A, [wCurKeys]
+  XOR A, B ; A = keys that changed state
+  AND A, B ; A = keys that changed to pressed
+  LD [wNewKeys], A
+  LD A, B
+  LD [wCurKeys], A
+  RET
 .onenibble
-  ldh [rP1], a ; switch the key matrix
-  call .knownret ; burn 10 cycles calling a known ret
-  ldh a, [rP1] ; ignore value while waiting for the key matrix to settle
-  ldh a, [rP1]
-  ldh a, [rP1] ; this read counts
-  or a, $F0 ; A7-4 = 1; A3-0 = unpressed keys
+  LDH [rP1], A    ; switch the key matrix
+  CALL .knownret  ; burn 10 cycles calling a known ret
+  LDH A, [rP1]    ; ignore value while waiting for the key matrix to settle
+  LDH A, [rP1]
+  LDH A, [rP1]    ; this read counts
+  OR A, $F0       ; A7-4 = 1; A3-0 = unpressed keys
 .knownret
-  ret
+  RET
 ; copy bytes from one area to another
 ; @param de: source
 ; @param hl: destination
 ; @param bc: length
 Memcopy:
-  ld a, [de]
-  ld [hli], a
-  inc de
-  dec bc
-  ld a, b
-  or a, c
-  jp nz, Memcopy
-  ret
+  LD A, [DE]
+  LD [HLi], A
+  INC DE
+  DEC BC
+  LD A, B
+  OR A, C
+  JP nz, Memcopy
+  RET
 ; Convert a pixel position to a tilemap address
 ; hl = $9800 + X + Y * 32
 ; @param b: X
@@ -286,420 +286,420 @@ GetTileByPixel:
   ; First, we need to divide by 8 to convert a pixel position to a tile position.
   ; After this we want to multiply the Y position by 32.
   ; These operations effectively cancel out so we only need to mask the Y value.
-  ld a, c
-  and a, %11111000
-  ld l, a
-  ld h, 0
+  LD A, C
+  AND A, %11111000
+  LD L, A
+  LD H, 0
   ; Now we have the position * 8 in hl
-  add hl, hl ; position * 16
-  add hl, hl ; position * 32
+  ADD HL, HL ; position * 16
+  ADD HL, HL ; position * 32
   ; Convert the X position to an offset.
-  ld a, b
-  srl a ; a / 2
-  srl a ; a / 4
-  srl a ; a / 8
+  LD A, B
+  SRL A ; a / 2
+  SRL A ; a / 4
+  SRL A ; a / 8
   ; Add the two offsets together.
-  add a, l
-  ld l, a
-  adc a, h
-  sub a, l
-  ld h, a
+  ADD A, L
+  LD L, A
+  ADC A, H
+  SUB A, L
+  LD H, A
   ; Add the offset to the tilemap's base address, and we are done!
-  ld bc, $9800
-  add hl, bc
-  ret
+  LD BC, $9800
+  ADD HL, BC
+  RET
 ; increases score by 1 and store it as a 1 byte packed BCD (binary coded decimal) value
 ; changes A and HL
 IncreaseScorePackedBCD:
-  xor a         ; clear out the carry flag and value in the accumulator
-  inc a         ; a = 1
-  ld hl, wScore ; load score into HL
-  adc [hl]      ; add 1
-  daa           ; convert to 
-  ld [hl], a    ; store score in HL
-  call UpdateScoreBoard
-  ret
+  XOR A         ; clear out the carry flag and value in the accumulator
+  INC A         ; a = 1
+  LD HL, wScore ; load score into HL
+  ADC [HL]      ; add 1
+  DAA           ; convert to BCD
+  LD [HL], A    ; store score in HL
+  CALL UpdateScoreBoard
+  RET
 ; read the packed BCD value from wScore and update the score display
 UpdateScoreBoard:
-  ld a, [wScore]
-  and %11110000 ; mask the lower nibble
-  swap a        ; move the upper nibble to the lower nibble
-  add a, DIGIT_OFFSET
-  ld [SCORE_TENS], a
-  ld a, [wScore]
-  and %00001111 ; mask the upper nibble
-  add a, DIGIT_OFFSET
-  ld [SCORE_ONES], a
+  LD A, [wScore]
+  AND %11110000 ; mask the lower nibble
+  SWAP A        ; move the upper nibble to the lower nibble
+  ADD A, DIGIT_OFFSET
+  LD [SCORE_TENS], A
+  LD A, [wScore]
+  AND %00001111 ; mask the upper nibble
+  ADD A, DIGIT_OFFSET
+  LD [SCORE_ONES], A
 ; @param a: tile ID
 ; @return z: set if a is a wall.
 IsWallTile:
-  cp a, $00
-  ret z
-  cp a, $01
-  ret z
-  cp a, $02
-  ret z
-  cp a, $04
-  ret z
-  cp a, $05
-  ret z
-  cp a, $06
-  ret z
-  cp a, $07
-  ret
+  CP A, $00
+  RET z
+  CP A, $01
+  RET z
+  CP A, $02
+  RET z
+  CP A, $04
+  RET z
+  CP A, $05
+  RET z
+  CP A, $06
+  RET z
+  CP A, $07
+  RET
 
 Tiles:
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33322222
-  dw `33322222
-  dw `33322222
-  dw `33322211
-  dw `33322211
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `11111111
-  dw `11111111
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `22222333
-  dw `22222333
-  dw `22222333
-  dw `11222333
-  dw `11222333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33333333
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `33322211
-  dw `22222222
-  dw `20000000
-  dw `20111111
-  dw `20111111
-  dw `20111111
-  dw `20111111
-  dw `22222222
-  dw `33333333
-  dw `22222223
-  dw `00000023
-  dw `11111123
-  dw `11111123
-  dw `11111123
-  dw `11111123
-  dw `22222223
-  dw `33333333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `11222333
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `11001100
-  dw `11111111
-  dw `11111111
-  dw `21212121
-  dw `22222222
-  dw `22322232
-  dw `23232323
-  dw `33333333
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222211
-  dw `22222211
-  dw `22222211
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `11111111
-  dw `11111111
-  dw `11221111
-  dw `11221111
-  dw `11000011
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `11222222
-  dw `11222222
-  dw `11222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222211
-  dw `22222200
-  dw `22222200
-  dw `22000000
-  dw `22000000
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `11000011
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11000022
-  dw `11222222
-  dw `11222222
-  dw `11222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222200
-  dw `22222200
-  dw `22222211
-  dw `22222211
-  dw `22221111
-  dw `22221111
-  dw `22221111
-  dw `11000022
-  dw `00112222
-  dw `00112222
-  dw `11112200
-  dw `11112200
-  dw `11220000
-  dw `11220000
-  dw `11220000
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22000000
-  dw `22000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `22222222
-  dw `11110022
-  dw `11110022
-  dw `11110022
-  dw `22221111
-  dw `22221111
-  dw `22221111
-  dw `22221111
-  dw `22221111
-  dw `22222211
-  dw `22222211
-  dw `22222222
-  dw `11220000
-  dw `11110000
-  dw `11110000
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `22222222
-  dw `00000000
-  dw `00111111
-  dw `00111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `11111111
-  dw `22222222
-  dw `11110022
-  dw `11000022
-  dw `11000022
-  dw `00002222
-  dw `00002222
-  dw `00222222
-  dw `00222222
-  dw `22222222
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33322222
+  DW `33322222
+  DW `33322222
+  DW `33322211
+  DW `33322211
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `11111111
+  DW `11111111
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `22222333
+  DW `22222333
+  DW `22222333
+  DW `11222333
+  DW `11222333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33333333
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `33322211
+  DW `22222222
+  DW `20000000
+  DW `20111111
+  DW `20111111
+  DW `20111111
+  DW `20111111
+  DW `22222222
+  DW `33333333
+  DW `22222223
+  DW `00000023
+  DW `11111123
+  DW `11111123
+  DW `11111123
+  DW `11111123
+  DW `22222223
+  DW `33333333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `11222333
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `11001100
+  DW `11111111
+  DW `11111111
+  DW `21212121
+  DW `22222222
+  DW `22322232
+  DW `23232323
+  DW `33333333
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222211
+  DW `22222211
+  DW `22222211
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `11111111
+  DW `11111111
+  DW `11221111
+  DW `11221111
+  DW `11000011
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `11222222
+  DW `11222222
+  DW `11222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222211
+  DW `22222200
+  DW `22222200
+  DW `22000000
+  DW `22000000
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `11000011
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11000022
+  DW `11222222
+  DW `11222222
+  DW `11222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222200
+  DW `22222200
+  DW `22222211
+  DW `22222211
+  DW `22221111
+  DW `22221111
+  DW `22221111
+  DW `11000022
+  DW `00112222
+  DW `00112222
+  DW `11112200
+  DW `11112200
+  DW `11220000
+  DW `11220000
+  DW `11220000
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22000000
+  DW `22000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `22222222
+  DW `11110022
+  DW `11110022
+  DW `11110022
+  DW `22221111
+  DW `22221111
+  DW `22221111
+  DW `22221111
+  DW `22221111
+  DW `22222211
+  DW `22222211
+  DW `22222222
+  DW `11220000
+  DW `11110000
+  DW `11110000
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `22222222
+  DW `00000000
+  DW `00111111
+  DW `00111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `11111111
+  DW `22222222
+  DW `11110022
+  DW `11000022
+  DW `11000022
+  DW `00002222
+  DW `00002222
+  DW `00222222
+  DW `00222222
+  DW `22222222
 ; digits
   ; 0
-  dw `33333333
-  dw `33000033
-  dw `30033003
-  dw `30033003
-  dw `30033003
-  dw `30033003
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30033003
+  DW `30033003
+  DW `30033003
+  DW `30033003
+  DW `33000033
+  DW `33333333
   ; 1
-  dw `33333333
-  dw `33300333
-  dw `33000333
-  dw `33300333
-  dw `33300333
-  dw `33300333
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `33300333
+  DW `33000333
+  DW `33300333
+  DW `33300333
+  DW `33300333
+  DW `33000033
+  DW `33333333
   ; 2
-  dw `33333333
-  dw `33000033
-  dw `30330003
-  dw `33330003
-  dw `33000333
-  dw `30003333
-  dw `30000003
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30330003
+  DW `33330003
+  DW `33000333
+  DW `30003333
+  DW `30000003
+  DW `33333333
   ; 3
-  dw `33333333
-  dw `30000033
-  dw `33330003
-  dw `33000033
-  dw `33330003
-  dw `33330003
-  dw `30000033
-  dw `33333333
+  DW `33333333
+  DW `30000033
+  DW `33330003
+  DW `33000033
+  DW `33330003
+  DW `33330003
+  DW `30000033
+  DW `33333333
   ; 4
-  dw `33333333
-  dw `33000033
-  dw `30030033
-  dw `30330033
-  dw `30330033
-  dw `30000003
-  dw `33330033
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30030033
+  DW `30330033
+  DW `30330033
+  DW `30000003
+  DW `33330033
+  DW `33333333
   ; 5
-  dw `33333333
-  dw `30000033
-  dw `30033333
-  dw `30000033
-  dw `33330003
-  dw `30330003
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `30000033
+  DW `30033333
+  DW `30000033
+  DW `33330003
+  DW `30330003
+  DW `33000033
+  DW `33333333
   ; 6
-  dw `33333333
-  dw `33000033
-  dw `30033333
-  dw `30000033
-  dw `30033003
-  dw `30033003
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30033333
+  DW `30000033
+  DW `30033003
+  DW `30033003
+  DW `33000033
+  DW `33333333
   ; 7
-  dw `33333333
-  dw `30000003
-  dw `33333003
-  dw `33330033
-  dw `33300333
-  dw `33000333
-  dw `33000333
-  dw `33333333
+  DW `33333333
+  DW `30000003
+  DW `33333003
+  DW `33330033
+  DW `33300333
+  DW `33000333
+  DW `33000333
+  DW `33333333
   ; 8
-  dw `33333333
-  dw `33000033
-  dw `30333003
-  dw `33000033
-  dw `30333003
-  dw `30333003
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30333003
+  DW `33000033
+  DW `30333003
+  DW `30333003
+  DW `33000033
+  DW `33333333
   ; 9
-  dw `33333333
-  dw `33000033
-  dw `30330003
-  dw `30330003
-  dw `33000003
-  dw `33330003
-  dw `33000033
-  dw `33333333
+  DW `33333333
+  DW `33000033
+  DW `30330003
+  DW `30330003
+  DW `33000003
+  DW `33330003
+  DW `33000033
+  DW `33333333
 TilesEnd:
 Tilemap:
-  db $00, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $02, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $1A, $1A, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $0A, $0B, $0C, $0D, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $0E, $0F, $10, $11, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $12, $13, $14, $15, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $16, $17, $18, $19, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $00, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $02, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $1A, $1A, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $0A, $0B, $0C, $0D, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $0E, $0F, $10, $11, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $12, $13, $14, $15, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $16, $17, $18, $19, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  DB $04, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
 TilemapEnd:
 Paddle:
-  dw `33333333
-  dw `32222223
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
-  dw `00000000
+  DW `33333333
+  DW `32222223
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
+  DW `00000000
 PaddleEnd:
 Ball:
-  dw `03330000
-  dw `32223000
-  dw `32223000
-  dw `32223000
-  dw `03330000
-  dw `00000000
-  dw `00000000
-  dw `00000000
+  DW `03330000
+  DW `32223000
+  DW `32223000
+  DW `32223000
+  DW `03330000
+  DW `00000000
+  DW `00000000
+  DW `00000000
 BallEnd:
 
 SECTION "Counter", WRAM0
-wFrameCounter: db
+wFrameCounter: DB
 
 SECTION "Input Variables", WRAM0
-wCurKeys: db
-wNewKeys: db
+wCurKeys: DB
+wNewKeys: DB
 
 SECTION "Ball Data", WRAM0
-wBallMomentumX: db
-wBallMomentumY: db
+wBallMomentumX: DB
+wBallMomentumY: DB
 
 SECTION "Score", WRAM0
-wScore: db
+wScore: DB
