@@ -17,7 +17,7 @@ WaitVBlank:
   CP 144
   JP c, WaitVBlank
   ; turn the LCD off
-  LD A, 0
+  XOR A
   LD [rLCDC], A
 ; copy the tiles
   LD DE, Tiles
@@ -51,9 +51,9 @@ ClearOam:
   LD HL, _OAMRAM
   LD A, 128 + 16
   LD [HLi], A
-  LD a, 16 + 8
+  LD A, 16 + 8
   LD [HLi], A
-  LD a, 0
+  XOR A
   LD [HLi], A
   LD [HLi], A
 ; init game object (ball)
@@ -63,7 +63,7 @@ ClearOam:
   LD [HLi], A
   LD A, 1
   LD [HLi], A
-  LD A, 0
+  XOR A
   LD [HLi], A
   ; set ball momentum (up and right)
   LD A, 1
@@ -79,7 +79,7 @@ ClearOam:
   LD A, %11100100
   LD [rOBP0], A
 ; initialize global vars
-  LD A, 0
+  XOR A
   LD [wFrameCounter], A
   LD [wCurKeys], A
   LD [wNewKeys], A
