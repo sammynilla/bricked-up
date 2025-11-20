@@ -1,8 +1,11 @@
 INCLUDE "hardware.inc"
 
-DEF BRICK_LEFT EQU $05
-DEF BRICK_RIGHT EQU $06
-DEF BLANK_TILE EQU $08
+DEF BRICK_LEFT    EQU $05
+DEF BRICK_RIGHT   EQU $06
+DEF BLANK_TILE    EQU $08
+DEF DIGIT_OFFSET  EQU $1A
+DEF SCORE_TENS    EQU $9870
+DEF SCORE_ONES    EQU $9871
 
 SECTION "Header", ROM0[$100]
   jp EntryPoint
@@ -80,6 +83,7 @@ ClearOam:
   ld [wFrameCounter], a
   ld [wCurKeys], a
   ld [wNewKeys], a
+  ld [wScore], a
 Main:
   ; wait until no longer VBlank
   ld a, [rLY]
@@ -215,6 +219,7 @@ CheckAndHandleBrick:
   ld [hl], BLANK_TILE
   inc hl
   ld [hl], BLANK_TILE
+  call IncreaseScorePackedBCD
 CheckAndHandleBrickRight:
   cp a, BRICK_RIGHT
   ret nz
@@ -222,6 +227,7 @@ CheckAndHandleBrickRight:
   ld [hl], BLANK_TILE
   dec hl
   ld [hl], BLANK_TILE
+  call IncreaseScorePackedBCD
   ret
 
 UpdateKeys: ; mysterious input polling black box from https://gbdev.io/gb-asm-tutorial/part2/input.html
@@ -302,6 +308,28 @@ GetTileByPixel:
   ld bc, $9800
   add hl, bc
   ret
+; increases score by 1 and store it as a 1 byte packed BCD (binary coded decimal) value
+; changes A and HL
+IncreaseScorePackedBCD:
+  xor a         ; clear out the carry flag and value in the accumulator
+  inc a         ; a = 1
+  ld hl, wScore ; load score into HL
+  adc [hl]      ; add 1
+  daa           ; convert to 
+  ld [hl], a    ; store score in HL
+  call UpdateScoreBoard
+  ret
+; read the packed BCD value from wScore and update the score display
+UpdateScoreBoard:
+  ld a, [wScore]
+  and %11110000 ; mask the lower nibble
+  swap a        ; move the upper nibble to the lower nibble
+  add a, DIGIT_OFFSET
+  ld [SCORE_TENS], a
+  ld a, [wScore]
+  and %00001111 ; mask the upper nibble
+  add a, DIGIT_OFFSET
+  ld [SCORE_ONES], a
 ; @param a: tile ID
 ; @return z: set if a is a wall.
 IsWallTile:
@@ -529,12 +557,103 @@ Tiles:
   dw `00222222
   dw `00222222
   dw `22222222
+; digits
+  ; 0
+  dw `33333333
+  dw `33000033
+  dw `30033003
+  dw `30033003
+  dw `30033003
+  dw `30033003
+  dw `33000033
+  dw `33333333
+  ; 1
+  dw `33333333
+  dw `33300333
+  dw `33000333
+  dw `33300333
+  dw `33300333
+  dw `33300333
+  dw `33000033
+  dw `33333333
+  ; 2
+  dw `33333333
+  dw `33000033
+  dw `30330003
+  dw `33330003
+  dw `33000333
+  dw `30003333
+  dw `30000003
+  dw `33333333
+  ; 3
+  dw `33333333
+  dw `30000033
+  dw `33330003
+  dw `33000033
+  dw `33330003
+  dw `33330003
+  dw `30000033
+  dw `33333333
+  ; 4
+  dw `33333333
+  dw `33000033
+  dw `30030033
+  dw `30330033
+  dw `30330033
+  dw `30000003
+  dw `33330033
+  dw `33333333
+  ; 5
+  dw `33333333
+  dw `30000033
+  dw `30033333
+  dw `30000033
+  dw `33330003
+  dw `30330003
+  dw `33000033
+  dw `33333333
+  ; 6
+  dw `33333333
+  dw `33000033
+  dw `30033333
+  dw `30000033
+  dw `30033003
+  dw `30033003
+  dw `33000033
+  dw `33333333
+  ; 7
+  dw `33333333
+  dw `30000003
+  dw `33333003
+  dw `33330033
+  dw `33300333
+  dw `33000333
+  dw `33000333
+  dw `33333333
+  ; 8
+  dw `33333333
+  dw `33000033
+  dw `30333003
+  dw `33000033
+  dw `30333003
+  dw `30333003
+  dw `33000033
+  dw `33333333
+  ; 9
+  dw `33333333
+  dw `33000033
+  dw `30330003
+  dw `30330003
+  dw `33000003
+  dw `33330003
+  dw `33000033
+  dw `33333333
 TilesEnd:
 Tilemap:
   db $00, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $02, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
   db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
   db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
-  db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
+  db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $1A, $1A, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
   db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
   db $04, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
   db $04, $08, $05, $06, $05, $06, $05, $06, $05, $06, $05, $06, $08, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
@@ -581,3 +700,6 @@ wNewKeys: db
 SECTION "Ball Data", WRAM0
 wBallMomentumX: db
 wBallMomentumY: db
+
+SECTION "Score", WRAM0
+wScore: db
