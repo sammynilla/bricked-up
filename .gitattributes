@@ -1,0 +1,2 @@
+*.gbasm linguist-language=Assembly
+*.gbz80 linguist-language=Assembly
