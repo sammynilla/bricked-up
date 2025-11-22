@@ -1,5 +1,12 @@
-ASSEMBLER=rgbasm
-LINKER=rgblink
-FIX=rgbfix
+PROJECTNAME:=bricked-up
+BIN=${PROJECTNAME}.gb
 
-BIN=bricked-up.gb
+# tools
+RGBDS?=
+ASSEMBLER:=${RGBDS}rgbasm
+LINKER:=${RGBDS}rgblink
+FIX:=${RGBDS}rgbfix
+GFX:=${RGBDS}rgbgfx
+
+# flags
+FIXFLAGS:= -v -p 0xFF

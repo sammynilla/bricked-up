@@ -3,7 +3,7 @@ include config.mk
 
 main: main.o
 	${LINKER} -o ${BIN} $<
-	${FIX} -v -p 0xFF ${BIN}
+	${FIX} ${FIXFLAGS} ${BIN}
 
 %.o:: %.gbasm
 	${ASSEMBLER} -o $@ $<
