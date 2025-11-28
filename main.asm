@@ -1,3 +1,5 @@
+; vim:ft=gbz80
+
 INCLUDE "hardware.inc"
 
 DEF BRICK_LEFT    EQU $05

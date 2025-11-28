@@ -5,7 +5,7 @@ main: main.o
 	${LINKER} -o ${BIN} $<
 	${FIX} ${FIXFLAGS} ${BIN}
 
-%.o:: %.gbasm
+%.o:: %.asm
 	${ASSEMBLER} -o $@ $<
 
 clean:
